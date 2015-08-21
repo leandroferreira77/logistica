@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Entregando Mercadorias</title>
+
+	<!-- Style sheets -->
+	<link rel="stylesheet" href="dojo/1.9.3/dojo/resources/dojo.css">
+	<link rel="stylesheet" href="dojo/1.9.3/dijit/themes/claro/claro.css">
+	<link rel="stylesheet" href="dojo/1.9.3/dojox/grid/resources/Grid.css">
+	<link rel="stylesheet" href="dojo/1.9.3/dojox/grid/resources/claroGrid.css">
+	<link rel="stylesheet" href="css/style.css">
+
+	<!-- Scripts -->
+	<script src="dojo/1.9.3/dojo/dojo.js"
+		data-dojo-config="isDebug: true, parseOnLoad:true, async: true"></script>
+
+	<script>
+		require([
+			"dijit/layout/TabContainer",
+			"dijit/layout/ContentPane",
+			"dijit/form/Button",
+			"dijit/form/Form",
+			"dijit/form/NumberTextBox",
+			"dijit/form/SimpleTextarea",
+			"dijit/registry",
+			"dijit/Tooltip",
+			"dojox/grid/DataGrid",
+			"dojox/layout/TableContainer",
+			"dojox/validate",
+			"dojox/validate/web",
+			"dojo/parser",
+			"dojo/domReady!"
+		]);
+	</script>
+</head>
+
+<body class="claro">
+
+	<h2>Pesquisa de Malha Logística entre dois pontos</h2>
+	
+	<div style="width: 350px; height: 300px">
+	
+		<div data-dojo-type="dijit/layout/TabContainer"
+			style="width: 100%; height: 100%;">
+			
+			<div data-dojo-type="dijit/layout/ContentPane" title="Malhas Cadastradas" data-dojo-props="selected:true">
+			
+				<div data-dojo-type="dijit/form/Form" id="addLogisticsNetwork" data-dojo-id="addLogisticsNetwork" action="" method="">
+					<script type="dojo/on" data-dojo-event="submit">
+						if (!this.validate()) {
+							return false;
+						}
+
+						require([
+							"dojo/dom",
+							"dojox/validate"
+						], function(dom, validate) {
+							dojo.xhrPost({
+								url: "services/shipping/logisticsNetwork/" + dom.byId("networkName").value,
+								postData: dom.byId("logisticsNetwork").value,
+								headers: {"Content-Type": "text/plain;charset=UTF-8"},
+								load: function(response) {
+									console.log("xhrPut succeeded", response);
+									dojo.byId("addLogisticsNetworkMessage").innerHTML = "<p>Malha Logística adicionada.</p>";
+								},
+								error: function(error, ioArgs) {
+									console.log("xhrPut failed", error, ioArgs);
+									dojo.byId("addLogisticsNetworkMessage").innerHTML = "<h3>" + error + "</h3>";
+								}
+							});
+						});
+
+						return false;
+					</script>					
+					<div data-dojo-type="dojox/layout/TableContainer" data-dojo-props="cols:1">
+						<!--<input id="networkName" title="Malha Logística: " data-dojo-type="dijit/form/TextBox" required="true" value="SP" /> -->
+						<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'networkName',position:['after']">Malhas Exemplo</div>
+						<textarea id="logisticsNetwork" title="Malhas Logística: " data-dojo-type="dijit/form/SimpleTextarea" required="true" rows="8" style="width: 176px;">A B 10&#10;B D 15&#10;A C 20&#10;C D 30&#10;B E 50&#10;D E 30</textarea>
+							<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'logisticsNetwork',position:['after']">
+								<p>
+								Uma Malha Logística é composta de múltiplos pontos,<br>
+								definindo um ponto inicial (origem), um ponto final (destino)<br>
+								e informando a distância percorrida. Abaixo segue a sintaxe adotada<br>
+								<b>origem&lt;espaço&gt;destino&lt;espaço&gt;distância</b>.</p>
+								Exemplo:
+<pre>
+A B 10
+B D 15
+A C 20
+C D 30
+B E 50
+D E 30
+</pre>
+							</div>						
+					</div>
+					<div id="addLogisticsNetworkMessage"></div>
+				</div>
+			</div>
+
+			<div data-dojo-type="dijit/layout/ContentPane" title="Pesquisar Malha Logística">
+				<div data-dojo-type="dijit/form/Form" id="findShortestPathForm" data-dojo-id="findShortestPathForm" action="" method="">
+					<script type="dojo/on" data-dojo-event="submit">
+						if (!this.validate()) {
+							return false;
+						}	
+						require([
+							"dojo/dom",
+							"dojo/io-query",
+							"dojo/_base/array",
+							"dojox/validate"
+						], function(dom, ioQuery, array, validate) {
+							var queryString = ioQuery.objectToQuery({
+								vehicleMileage: dom.byId("vehicleMileage").value,
+								fuelPrice: dom.byId("fuelPrice").value
+							});
+
+							var url = "http://localhost:8080/logistica/services/shipping/shippingDetails"
+								+ "/" + dom.byId("origin").value
+								+ "/" + dom.byId("destination").value
+								+ "?" + queryString;
+
+							dojo.xhrGet({
+								url: url,
+								handleAs:"json",
+								load: function(response) {
+									console.log("xhrGet succeeded", response);
+									if (response) {
+										var route = "";
+										array.forEach(response.shippingRoute.legs, function(leg, i){
+											if (i == 0) {
+												route += leg.origin;
+											}
+											route += " " + leg.destination;
+										});
+										dojo.byId("findShortestPathMessage").innerHTML = "<p>Rota Percorrida: " + route + "<br>Menor Custo: " + response.shippingRate + "</p>";
+									} else {
+										dojo.byId("findShortestPathMessage").innerHTML = "<h3>Nenhuma rota encontrada entre a origem e o destino.</h3>";
+									}
+								},
+								error: function(error, ioArgs) {
+									console.log("xhrGet failed", error, ioArgs);
+									dojo.byId("findShortestPathMessage").innerHTML = "<h3>" + error + "</h3>";
+								}
+							});
+						});
+
+						return false;
+					</script>					
+					<div data-dojo-type="dojox/layout/TableContainer" data-dojo-props="cols:1">
+						<input id="origin" title="Origem: " data-dojo-type="dijit/form/TextBox" required="true" value="A" />
+						<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'origin',position:['after']">Origem campo obrigatório.</div>
+						<input id="destination" title="Destino: " data-dojo-type="dijit/form/TextBox" required="true" value="D" />
+						<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'destination',position:['after']">Destino campo obrigatório.</div>
+						<input id="vehicleMileage" title="Distância: " data-dojo-type="dijit/form/NumberTextBox" required="true" value="10" />
+						<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'vehicleMileage',position:['after']">Distância campo obrigatório.</div>
+						 <input id="fuelPrice" title="Vl. Combustível: " value="2.5" regExp="(^([0-9]*[.][0-9]*[1-9]+[0-9]*)$)|(^([0-9]*[1-9]+[0-9]*[.][0-9]+)$)|(^([1-9]+[0-9]*)$)" dojoType="dijit.form.ValidationTextBox" />
+						<div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'fuelPrice',position:['after']">Valor do Combustível.</div>
+					</div>
+					<button data-dojo-type="dijit/form/Button" type="submit" value="Submit">Pesquisar</button>
+					<div id="findShortestPathMessage"></div>
+				</div>
+			</div>
+		</div>
+
+		
+	</div>
+</body>
+</html>
