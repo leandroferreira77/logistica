@@ -1,5 +1,12 @@
 package org.drmit.shortestpath.application.services.impl;
 
+/**
+ * This exception is raised when no shipping route could be found between the
+ * origin and destination.
+ * 
+ * @author Leandro Ferreira
+ */
+
 import static org.junit.Assert.assertEquals;
 
 import org.drmit.shortestpath.application.services.ServiceException;
