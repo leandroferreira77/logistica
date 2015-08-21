@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!--
-	The MIT License (MIT)
-	
 	Copyright (c) 2015 Leandro Ferreira
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
